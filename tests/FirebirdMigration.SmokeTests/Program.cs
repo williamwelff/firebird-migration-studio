@@ -31,7 +31,26 @@ Assert(differences.Count == 2, "Detectar duas diferenças");
 Assert(differences.Any(x => x.Kind == SchemaDifferenceKind.DifferentDefinition && x.Column == "NOME"), "Detectar mudança de definição");
 Assert(differences.Any(x => x.Kind == SchemaDifferenceKind.ExtraInTarget && x.Column == "LEGADO"), "Detectar campo extra");
 Assert(SchemaComparer.Compare(masterSchema, masterSchema).Count == 0, "Esquemas idênticos");
-Console.WriteLine("17 verificações locais de perfis, versões, reset e metadados concluídas.");
+var withCharacters = new DatabaseSchema(new[]
+{
+    new ColumnDefinition("CLIENTES", "NOME", 0, "37", 120, 0, false,
+        CharacterLength: 30, SubType: 0, CharacterSet: 4, Collation: 0)
+});
+var withDifferentCharacterLength = new DatabaseSchema(new[]
+{
+    new ColumnDefinition("CLIENTES", "NOME", 0, "37", 120, 0, false,
+        CharacterLength: 40, SubType: 0, CharacterSet: 4, Collation: 0)
+});
+Assert(SchemaComparer.Compare(withCharacters, withDifferentCharacterLength).Count == 1,
+    "Comprimento em caracteres deve ser comparado, mesmo com bytes iguais");
+var withDifferentCharset = new DatabaseSchema(new[]
+{
+    new ColumnDefinition("CLIENTES", "NOME", 0, "37", 120, 0, false,
+        CharacterLength: 30, SubType: 0, CharacterSet: 3, Collation: 0)
+});
+Assert(SchemaComparer.Compare(withCharacters, withDifferentCharset).Count == 1,
+    "Detectar charset diferente");
+Console.WriteLine("19 verificações locais de perfis, versões, reset e metadados concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
