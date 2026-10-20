@@ -9,3 +9,7 @@ This is **not a complete DDL comparison**. Internal Firebird type codes must sti
 The desktop UI does not trigger schema reads yet. Integration verification is deferred for disposable Firebird 2.5, 3.0, 4.0 and 5.0 servers. CI compilation is not evidence of successful real-server access.
 
 **Safety:** no write statements and no synchronization scripts in this phase.
+
+## Extended metadata
+
+The reader now includes character length, subtype, numeric precision, charset ID and effective collation ID alongside earlier fields. This catches previously unseen metadata differences such as equal byte length but unequal character length. The code still does **not** render canonical SQL DDL or establish cross-database semantic charset equivalence. Real-server compatibility remains unverified.
