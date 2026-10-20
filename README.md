@@ -1,59 +1,62 @@
 # Firebird Migration Studio
 
-Open-source, cross-platform desktop application for **migration, comparison and controlled synchronization** of Firebird databases.
+Aplicativo desktop **open source e multiplataforma** para **migração, comparação e sincronização controlada** de bancos de dados Firebird.
 
-> **Status: planning / early development.** No production-ready migration or synchronization functionality has been released.
+> **Estado atual: protótipo inicial em desenvolvimento.** Ainda não existe uma versão pronta para operações reais em produção.
 
-## Goals
+## Objetivos
 
-- Support Windows, Ubuntu and Fedora with one desktop codebase (C# / .NET 10 / Avalonia UI).
-- Migrate databases from Firebird 2.5 to Firebird 5.0 using version-appropriate official Firebird backup/restore tools.
-- Compare a **master/source** database with a **target** database, including schema and records.
-- Generate a human-reviewable synchronization plan; apply approved changes **only to the target**.
-- Let technicians perform operations from a graphical interface, without typing commands.
+- Atender Windows 10/11, Ubuntu e Fedora com C#, .NET 10 e Avalonia UI.
+- Migrar bancos Firebird 2.5 para Firebird 5.0 usando as ferramentas oficiais adequadas a cada versão.
+- Comparar um **banco master (referência)** com um **banco alvo**, tanto em estrutura quanto em registros.
+- Gerar um plano revisável de correções; aplicar alterações aprovadas **somente no banco alvo**.
+- Permitir que técnicos usem uma interface gráfica, sem digitar comandos.
 
-## Planned modules
+## Módulos planejados
 
-| Module | Responsibilities |
+| Módulo | Responsabilidades |
 | --- | --- |
-| Desktop UI | Connection profiles, step-by-step wizards, progress, preview, approval and reports |
-| Migration | Prerequisite checks; source backup; destination restore; log capture; post-restore validation |
-| Schema compare | Compare tables, columns, types, constraints, indexes, views, triggers, procedures, generators/sequences |
-| Data compare | Row matching by primary keys or explicitly configured stable unique keys; inserts, updates, optional deletes |
-| Sync engine | Dependency ordering, dry-run, backup preconditions, conflict handling, bounded transactions, post-run verification |
-| Reports | Differences, selected actions, execution audit and remaining issues |
+| Interface gráfica | Perfis de conexão, assistentes, progresso, pré-visualização e relatórios |
+| Migração | Verificações, backup da origem, restauração no destino e validação |
+| Comparação estrutural | Tabelas, campos, índices, restrições, views, triggers, procedures e generators |
+| Comparação de registros | Correspondência por chave estável, inserções, atualizações e exclusões opcionais |
+| Sincronização | Simulação, aprovação, ordem de dependências, execução auditável e conferência |
+| Relatórios | Diferenças, ações aprovadas, logs e pendências |
 
-## Safety principles
+## Segurança
 
-1. **Never modify the master.** It is the reference database; perform comparison using read-only access when feasible.
-2. Never silently delete target rows. Deletions require explicit opt-in and an additional confirmation.
-3. Default to **compare-only** until a synchronization plan has been reviewed.
-4. Do not claim synchronization is safe without a tested backup and rollback/recovery plan.
-5. Use parameterized queries for values; validate and quote Firebird identifiers correctly.
-6. Match rows only with a primary key or explicitly confirmed stable unique identifier; otherwise report the table as requiring manual mapping.
-7. Take into account foreign keys, triggers, generated values, transactions, BLOBs, charsets/collations, concurrency and schema/version differences.
-8. Handle large tables in batches and show resumable/auditable progress; do not load entire databases into memory.
-9. Use separate version-appropriate Firebird utilities for migrations; do not redistribute binaries without checking their licenses.
-10. Test all behavior on disposable databases before any production use.
+1. O banco **master nunca deve ser modificado** pela sincronização.
+2. A comparação é somente leitura; operações de escrita ficam bloqueadas até revisão e autorização.
+3. Exclusões no banco alvo são desativadas por padrão e exigem confirmação adicional.
+4. Aplicação de mudanças exige backup recuperável e plano de reversão.
+5. Tabelas sem chave primária ou outra chave única estável exigem mapeamento explícito.
+6. A solução precisa considerar integridade referencial, triggers, BLOBs, charset, concorrência e volume de dados.
+7. Não executar migrações reais antes de testes em bancos descartáveis.
 
-## Platform targets
+## Plataformas prioritárias
 
-- Windows 10/11 x64
-- Ubuntu LTS x64
-- Fedora x64
+- Windows 10/11 x64 — instalador planejado.
+- Ubuntu LTS x64 — pacote `.deb` planejado.
+- Fedora x64 — pacote `.rpm` planejado.
 
-Planned distribution: Windows installer, Ubuntu `.deb`, Fedora `.rpm`. Packaging and platform compatibility remain to be implemented and validated.
+**Os instaladores ainda não estão disponíveis.** Compilar não equivale a homologar a interface em cada sistema.
 
-## Proposed technology
+## Tecnologias
 
-- .NET 10, C#
-- Avalonia UI, MVVM
-- Firebird .NET data provider (exact compatible versions to be validated)
-- Official `gbak` and `gstat` utilities for migration and verification
-- Automated unit and integration tests with disposable Firebird instances
+- C# e .NET 10
+- Avalonia UI
+- Provedor .NET para Firebird, com versões compatíveis a validar
+- Utilitários oficiais `gbak` e `gstat` para migração e conferência
 
-Read the [product requirements](docs/PRODUCT_REQUIREMENTS.md) for the initial roadmap and acceptance criteria.
+## Documentação
 
-## License
+- [Requisitos do produto](docs/PRODUCT_REQUIREMENTS.md)
+- [Como executar o protótipo](docs/RUNNING_PREVIEW.md)
 
-MIT (subject to addition of the license file). Third-party utilities retain their own licenses.
+## Processo de design
+
+**Qualquer nova proposta visual será apresentada para aprovação antes de ser incorporada ao aplicativo.** A interface atual é apenas um protótipo técnico, anterior a essa regra.
+
+## Licença
+
+MIT. Componentes e ferramentas de terceiros mantêm suas próprias licenças.
