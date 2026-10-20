@@ -7,7 +7,7 @@ Aplicativo desktop **open source e multiplataforma** para **migração, compara�
 ## Objetivos
 
 - Atender Windows 10/11, Ubuntu e Fedora com C#, .NET 10 e Avalonia UI.
-- Migrar bancos Firebird 2.5 para Firebird 5.0 usando as ferramentas oficiais adequadas a cada versão.
+- Migrar bancos Firebird **2.5, 3.0 e 4.0 para Firebird 5.0**, usando as ferramentas oficiais adequadas a cada versão e validações prévias. As séries 3.5 e 4.5 não são versões oficiais do Firebird.
 - Comparar um **banco master (referência)** com um **banco alvo**, tanto em estrutura quanto em registros.
 - Gerar um plano revisável de correções; aplicar alterações aprovadas **somente no banco alvo**.
 - Permitir que técnicos usem uma interface gráfica, sem digitar comandos.
