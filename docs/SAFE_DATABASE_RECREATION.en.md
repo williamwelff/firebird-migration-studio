@@ -1,29 +1,37 @@
-# Safe database recreation (planned feature)
+# Factory reset of a database — specification
 
-## Goal
+**Status: planned; not implemented.**
 
-Allow operators on Windows, Ubuntu and Fedora to create **a fresh database** without database administration commands. This feature is **not implemented or enabled**; this document defines its safety requirements.
+## Expected behavior
 
-## Modes
+**Restore factory defaults** creates a **new** Firebird 5.0 database from an approved **application-specific schema template**, retaining the schema and excluding operational/customer records.
 
-1. **Empty database:** create a new Firebird 5.0 database without user tables or records.
-2. **Schema-only database:** create a **new** database using a chosen application's schema but without business records. This requires an **application-specific schema/template**; there is no universal Firebird data model for all applications.
+Retain, according to the template: tables, columns, primary/foreign keys, indexes, views, triggers, stored procedures, packages, generators/sequences, domains, constraints and required permissions.
 
-A future installer may include a clearly labeled demonstration sample containing no real customer data, subject to its license. Do not bundle customer databases or application-specific templates without permission.
+This is **not** an empty database without tables, and not an indiscriminate mass DELETE operation.
 
-## Required protections
+## Templates and seed data
 
-- Never perform resets during installation, update or startup.
-- Never modify the master reference database.
-- Default to creating a **new database at a different path**, leaving the original unchanged.
-- Replacing an existing target requires a tested backup, verification of physical target identity and extra approval; replacement remains disabled in the MVP.
-- Do not store real customer `.fdb` files in this repository or installers.
-- Clarify that server users/passwords are separate from database contents.
-- Test with disposable databases before release.
-- Create sanitized audit logs and show clear completion reports.
+The Firebird Migration Studio cannot infer each application's intended factory schema. An approved application-specific template is required.
 
-## Proposed UI — requires visual approval
+Distinguish:
+- Schema definitions to retain.
+- Operational data to exclude.
+- Essential seed data (configuration, reference tables, required accounts) to retain **only when explicitly designated**.
 
-Settings > Databases > **Create clean database**, with template/mode selection and a new destination path. It is a new-database wizard, **not a universal delete-all-data button**.
+Validate generator initial values, references and application bootstrap requirements. If no approved template is available, disable the feature.
 
-The visual change must be reviewed before merging into the UI.
+A permitted, verified template may be bundled with the installer; otherwise the user may import one. Never bundle customer databases, secrets or third-party proprietary artifacts without permission.
+
+## Safety
+
+- Never run on install, update or launch.
+- Never change the master.
+- Create a **new** database at a separate location by default, leaving the original intact.
+- Require template selection, impact preview, verified recoverable backup and explicit confirmation.
+- Replacing existing databases is disabled in the MVP.
+- Verify resulting schema and required seed data; produce sanitized audit logs.
+
+## UI
+
+Proposed name: **Restore factory defaults** (PT-BR: **Restaurar configurações de fábrica**). Visual implementation requires prior approval.
