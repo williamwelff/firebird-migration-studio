@@ -3,7 +3,9 @@ using FirebirdSql.Data.FirebirdClient;
 namespace FirebirdMigration.Core;
 
 public sealed record ColumnDefinition(string Table, string Name, int Position, string FieldType,
-    int? Length, int? Scale, bool NotNull);
+    int? Length, int? Scale, bool NotNull,
+    int? CharacterLength = null, int? SubType = null, int? Precision = null,
+    int? CharacterSet = null, int? Collation = null);
 
 public sealed record DatabaseSchema(IReadOnlyList<ColumnDefinition> Columns);
 
@@ -32,7 +34,10 @@ public static class SchemaComparer
                 differences.Add(new(SchemaDifferenceKind.MissingInTarget, a.Table, a.Name, a, null));
             else if (a is not null && b is not null &&
                 (a.Position != b.Position || a.FieldType != b.FieldType ||
-                 a.Length != b.Length || a.Scale != b.Scale || a.NotNull != b.NotNull))
+                 a.Length != b.Length || a.Scale != b.Scale || a.NotNull != b.NotNull ||
+                 a.CharacterLength != b.CharacterLength || a.SubType != b.SubType ||
+                 a.Precision != b.Precision || a.CharacterSet != b.CharacterSet ||
+                 a.Collation != b.Collation))
                 differences.Add(new(SchemaDifferenceKind.DifferentDefinition, a.Table, a.Name, a, b));
         }
         return differences;
@@ -52,7 +57,12 @@ public static class SchemaReader
                f.RDB$FIELD_TYPE,
                f.RDB$FIELD_LENGTH,
                f.RDB$FIELD_SCALE,
-               COALESCE(rf.RDB$NULL_FLAG, f.RDB$NULL_FLAG, 0)
+               COALESCE(rf.RDB$NULL_FLAG, f.RDB$NULL_FLAG, 0),
+               f.RDB$CHARACTER_LENGTH,
+               f.RDB$FIELD_SUB_TYPE,
+               f.RDB$FIELD_PRECISION,
+               f.RDB$CHARACTER_SET_ID,
+               COALESCE(rf.RDB$COLLATION_ID, f.RDB$COLLATION_ID)
         FROM RDB$RELATION_FIELDS rf
         JOIN RDB$RELATIONS r ON r.RDB$RELATION_NAME = rf.RDB$RELATION_NAME
         JOIN RDB$FIELDS f ON f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE
@@ -89,7 +99,12 @@ public static class SchemaReader
                 Convert.ToString(reader.GetValue(3), System.Globalization.CultureInfo.InvariantCulture) ?? "",
                 reader.IsDBNull(4) ? null : Convert.ToInt32(reader.GetValue(4)),
                 reader.IsDBNull(5) ? null : Convert.ToInt32(reader.GetValue(5)),
-                Convert.ToInt32(reader.GetValue(6)) != 0));
+                Convert.ToInt32(reader.GetValue(6)) != 0,
+                reader.IsDBNull(7) ? null : Convert.ToInt32(reader.GetValue(7)),
+                reader.IsDBNull(8) ? null : Convert.ToInt32(reader.GetValue(8)),
+                reader.IsDBNull(9) ? null : Convert.ToInt32(reader.GetValue(9)),
+                reader.IsDBNull(10) ? null : Convert.ToInt32(reader.GetValue(10)),
+                reader.IsDBNull(11) ? null : Convert.ToInt32(reader.GetValue(11))));
         }
         await transaction.CommitAsync(token);
         return new DatabaseSchema(columns);
