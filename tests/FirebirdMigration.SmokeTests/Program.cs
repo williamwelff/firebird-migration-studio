@@ -119,7 +119,15 @@ AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 0),
     "Bloquear tamanho de página zero");
 AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 1001),
     "Bloquear tamanho acima do máximo");
-Console.WriteLine("44 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
+PrimaryKeyValidator.ValidateSelection(new[] { "ID" }, new[] { "ID" });
+PrimaryKeyValidator.ValidateSelection(new[] { "FILIAL", "ID" }, new[] { "FILIAL", "ID" });
+AssertThrows(() => PrimaryKeyValidator.ValidateSelection(new[] { "ID" }, Array.Empty<string>()),
+    "Bloquear tabela sem PK");
+AssertThrows(() => PrimaryKeyValidator.ValidateSelection(new[] { "ID", "FILIAL" }, new[] { "FILIAL", "ID" }),
+    "Bloquear ordem incorreta de PK composta");
+AssertThrows(() => PrimaryKeyValidator.ValidateSelection(new[] { "OUTRO" }, new[] { "ID" }),
+    "Bloquear chave distinta da PK");
+Console.WriteLine("49 verificações locais de perfis, versões, reset, metadados, registros e PK concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
