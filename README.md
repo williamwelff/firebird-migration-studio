@@ -1,5 +1,7 @@
 # Firebird Migration Studio
 
+**Português (Brasil)** | [English](README.en.md)
+
 Aplicativo desktop **open source e multiplataforma** para **migração, comparação e sincronização controlada** de bancos de dados Firebird.
 
 > **Estado atual: protótipo inicial em desenvolvimento.** Ainda não existe uma versão pronta para operações reais em produção.
@@ -48,9 +50,14 @@ Aplicativo desktop **open source e multiplataforma** para **migração, compara�
 - Provedor .NET para Firebird, com versões compatíveis a validar
 - Utilitários oficiais `gbak` e `gstat` para migração e conferência
 
+## Idiomas
+
+O aplicativo terá **Português (Brasil)** (padrão) e **English** selecionáveis pela interface.
+
 ## Documentação
 
-- [Requisitos do produto](docs/PRODUCT_REQUIREMENTS.md)
+- [Requisitos do produto (PT-BR)](docs/PRODUCT_REQUIREMENTS.md)
+- [Product requirements (English)](docs/PRODUCT_REQUIREMENTS.en.md)
 - [Como executar o protótipo](docs/RUNNING_PREVIEW.md)
 
 ## Processo de design
