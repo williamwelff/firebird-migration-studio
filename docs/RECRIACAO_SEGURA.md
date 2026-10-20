@@ -1,29 +1,42 @@
-# Recriação segura de banco de dados (funcionalidade planejada)
+# Restauração de fábrica do banco — especificação
 
-## Objetivo
+**Estado: planejado; não implementado.**
 
-Permitir ao usuário criar **uma nova base limpa** em Windows, Ubuntu e Fedora sem conhecimento de comandos administrativos. Esta função **não está implementada nem habilitada**; este documento estabelece o contrato de segurança.
+## Comportamento esperado
 
-## Modos
+A opção **Restaurar configurações de fábrica** cria um banco Firebird 5.0 novo, com a **mesma estrutura de um modelo aprovado**, mas sem dados operacionais de clientes.
 
-1. **Banco vazio:** criar um novo banco Firebird 5.0 sem tabelas nem dados.
-2. **Estrutura sem registros:** criar um **novo** banco com a estrutura do modelo selecionado (tabelas, índices, procedures, triggers etc.), mas sem os dados de negócio. Um modelo desse tipo **depende do esquema da aplicação**: não existe um único arquivo Firebird genérico que sirva para todos os sistemas.
+Deve preservar, conforme o modelo: tabelas, colunas, tipos, chaves primárias e estrangeiras, índices, views, triggers, procedures, packages, sequences/generators, domains, constraints e permissões necessárias.
 
-No futuro, o instalador poderá incluir um banco de exemplo identificável, exclusivamente para demonstração, sem informações reais e com licença adequada. Um modelo da estrutura do banco de cada cliente **não** deve ser empacotado em um instalador genérico.
+**Não** é criar um banco vazio sem tabelas, nem executar `DELETE FROM` indiscriminadamente.
 
-## Proteções obrigatórias
+## Modelo e dados iniciais
 
-- **Nunca redefinir automaticamente na instalação, atualização ou inicialização.**
-- Nunca substituir ou modificar o banco master.
-- Por padrão, criar um **novo banco em outro caminho**, mantendo o original intacto.
-- Antes de permitir substituir um alvo existente, exigir backup testado, conferência de destino físico e confirmação explícita adicional; essa ação permanecerá desabilitada no MVP.
-- Não incluir arquivos `.fdb` reais de clientes no repositório ou instalador.
-- Alertar claramente que a recriação não migra senhas e usuários do servidor.
-- Executar testes automatizados e teste manual com bancos descartáveis antes da liberação.
-- Exibir resumo do resultado e registrar auditoria sem senhas.
+A estrutura deve vir de um **modelo de banco específico da aplicação** fornecido ou aprovado pelo responsável. O Firebird Migration Studio é uma ferramenta genérica e não possui como adivinhar a estrutura de cada cliente.
 
-## Interface proposta — ainda sujeita à aprovação visual
+Separar:
+- **Estrutura:** objetos do banco que devem permanecer.
+- **Dados operacionais:** clientes, vendas, histórico etc., que não devem permanecer.
+- **Dados essenciais de inicialização:** parâmetros, perfis, tabelas de referência ou cadastros indispensáveis, quando expressamente definidos no modelo.
 
-Na seção Configurações > Bancos de dados, oferecer **Criar banco limpo**, com opções de tipo, caminho de destino e resumo de segurança. O recurso é de criação de novo banco, **não um botão de apagar registros indiscriminadamente**.
+Validar valores iniciais de generators/sequences e dependências de dados essenciais.
 
-A implementação visual deve ser apresentada para aprovação antes de ser incorporada ao aplicativo.
+Sem um modelo homologado, o botão deve ficar indisponível, com explicação clara.
+
+## Distribuição
+
+Uma versão homologada do modelo poderá ser disponibilizada na instalação **somente quando houver autorização e compatibilidade da aplicação**. Não incluir bancos de clientes, credenciais nem arquivos proprietários sem permissão. Modelos poderão também ser importados posteriormente.
+
+## Segurança
+
+1. Jamais executar automaticamente ao instalar, atualizar ou iniciar.
+2. Jamais modificar o master.
+3. Criar por padrão um **novo arquivo** em caminho distinto, sem apagar o original.
+4. Exigir seleção do modelo, pré-visualização do que será preservado/removido, backup recuperável e confirmação explícita.
+5. Substituição de banco existente fica desabilitada no MVP; depois exigirá salvaguardas adicionais.
+6. Validar a estrutura resultante e os dados essenciais antes de disponibilizar para uso.
+7. Emitir logs sem senhas nem dados pessoais.
+
+## Interface
+
+A funcionalidade poderá aparecer como **Restaurar configurações de fábrica** (EN: **Restore factory defaults**). Qualquer mudança visual deverá ser mostrada para aprovação antes de inclusão no aplicativo.
