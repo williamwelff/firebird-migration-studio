@@ -1,0 +1,36 @@
+name: Build desktop preview
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore src/FirebirdMigration.Desktop/FirebirdMigration.Desktop.csproj
+      - name: Build preview
+        run: dotnet build src/FirebirdMigration.Desktop/FirebirdMigration.Desktop.csproj --configuration Release --no-restore
+      - name: Run core smoke tests
+        run: dotnet run --project tests/FirebirdMigration.SmokeTests/FirebirdMigration.SmokeTests.csproj --configuration Release
+
+  fedora-build:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - run: dnf install -y dotnet-sdk-10.0 git
+      - uses: actions/checkout@v4
+      - name: Build and smoke test on Fedora
+        run: |
+          dotnet build src/FirebirdMigration.Desktop/FirebirdMigration.Desktop.csproj -c Release
+          dotnet run --project tests/FirebirdMigration.SmokeTests/FirebirdMigration.SmokeTests.csproj -c Release
