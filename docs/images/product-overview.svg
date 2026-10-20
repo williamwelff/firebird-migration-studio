@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="t d">
+<title id="t">Firebird Migration Studio - conceito do produto</title><desc id="d">Fluxos planejados: migração de versões antigas para Firebird 5, comparação, prévia de sincronização e restauração de fábrica.</desc>
+<rect width="1200" height="640" rx="24" fill="#f3f7fc"/>
+<rect x="28" y="24" width="1144" height="106" rx="19" fill="#102d58"/>
+<text x="57" y="78" font-family="Arial,sans-serif" font-size="34" font-weight="bold" fill="#fff">Firebird Migration Studio</text>
+<text x="59" y="110" font-family="Arial,sans-serif" font-size="18" fill="#bed9ff">Migração • comparação • sincronização segura • restauração de fábrica</text>
+<g font-family="Arial,sans-serif" text-anchor="middle">
+<rect x="38" y="165" width="342" height="192" rx="18" fill="#fff" stroke="#cbd8e7" stroke-width="2"/>
+<text x="209" y="211" font-size="23" font-weight="bold" fill="#113b75">1 · Migrar</text><text x="209" y="247" font-size="18" fill="#53677d">Firebird 2.5 / 3.0 / 4.0</text>
+<path d="M145 277 L269 277" stroke="#1566d8" stroke-width="7" stroke-linecap="round"/><path d="M256 264 L275 277 L256 290" fill="none" stroke="#1566d8" stroke-width="7"/>
+<text x="209" y="328" font-size="19" fill="#113b75">Firebird 5.0</text>
+<rect x="429" y="165" width="342" height="192" rx="18" fill="#fff" stroke="#cbd8e7" stroke-width="2"/>
+<text x="600" y="211" font-size="23" font-weight="bold" fill="#113b75">2 · Comparar</text><text x="600" y="248" font-size="18" fill="#53677d">Master (somente leitura)</text>
+<text x="600" y="278" font-size="22" fill="#1566d8">↕</text><text x="600" y="308" font-size="18" fill="#53677d">Banco alvo</text>
+<rect x="820" y="165" width="342" height="192" rx="18" fill="#fff" stroke="#cbd8e7" stroke-width="2"/>
+<text x="991" y="211" font-size="23" font-weight="bold" fill="#113b75">3 · Sincronizar</text>
+<text x="991" y="252" font-size="18" fill="#53677d">Prévia e aprovação</text><text x="991" y="286" font-size="18" fill="#53677d">Somente no alvo</text>
+<rect x="922" y="308" width="139" height="29" rx="14" fill="#fff1e9"/><text x="991" y="329" font-size="15" fill="#ae5318">Planejado</text>
+<rect x="38" y="393" width="1124" height="125" rx="18" fill="#e7f2ff" stroke="#c3dcfa"/>
+<text x="600" y="431" font-size="24" font-weight="bold" fill="#113b75">Restauração de fábrica</text>
+<text x="600" y="467" font-size="19" fill="#355c82">Estrutura preservada + configurações essenciais · sem dados operacionais</text>
+<text x="600" y="497" font-size="15" fill="#53677d">Requer modelo aprovado da aplicação</text>
+<text x="600" y="556" font-size="18" fill="#133e72">Windows  •  Ubuntu  •  Fedora       |       PT-BR  •  English</text>
+<text x="600" y="601" font-size="16" fill="#63738a">Ilustração conceitual · recursos em desenvolvimento · não é captura do aplicativo</text>
+</g></svg>
