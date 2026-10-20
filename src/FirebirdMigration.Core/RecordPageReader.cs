@@ -51,6 +51,8 @@ public static class RecordPageReader
         await using var connection = new FbConnection(settings.ToString());
         await connection.OpenAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Snapshot, cancellationToken);
+        var declaredKey = await PrimaryKeyValidator.ReadDeclaredAsync(connection, (FbTransaction)transaction, table, cancellationToken);
+        PrimaryKeyValidator.ValidateSelection(keyColumns, declaredKey);
         await using var command = connection.CreateCommand();
         command.Transaction = (FbTransaction)transaction;
         command.CommandText = sql;
