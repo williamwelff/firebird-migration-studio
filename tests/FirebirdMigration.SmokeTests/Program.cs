@@ -61,7 +61,17 @@ Assert(structuralDiff.Count == 2, "Duas diferenças de estrutura");
 Assert(structuralDiff.Any(x => x.ObjectType == "Índice" && x.Kind == "Definição diferente"), "Direção do índice");
 Assert(structuralDiff.Any(x => x.ObjectType == "Restrição" && x.Kind == "Ausente no alvo"), "PK ausente");
 Assert(StructuralComparer.Compare(structuralMaster, structuralMaster).Count == 0, "Estruturas idênticas");
-Console.WriteLine("23 verificações locais de perfis, versões, reset e metadados concluídas.");
+var fkMaster = new StructuralSnapshot(Array.Empty<IndexDefinition>(),
+    new[] { new KeyDefinition("PEDIDOS", "FK_CLIENTE", "FOREIGN KEY", new[] { "CLIENTE_ID" },
+        "CLIENTES", "NO ACTION", "CASCADE") });
+var fkTarget = new StructuralSnapshot(Array.Empty<IndexDefinition>(),
+    new[] { new KeyDefinition("PEDIDOS", "FK_CLIENTE", "FOREIGN KEY", new[] { "CLIENTE_ID" },
+        "CLIENTES", "NO ACTION", "SET NULL") });
+Assert(StructuralComparer.Compare(fkMaster, fkTarget).Count == 1,
+    "Detectar diferença na regra ON DELETE");
+Assert(StructuralComparer.Compare(fkMaster, fkMaster).Count == 0,
+    "Não sinalizar FK idêntica");
+Console.WriteLine("25 verificações locais de perfis, versões, reset e metadados concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
