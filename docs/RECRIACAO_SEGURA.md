@@ -17,7 +17,7 @@ A estrutura deve vir de um **modelo de banco específico da aplicação** fornec
 Separar:
 - **Estrutura:** objetos do banco que devem permanecer.
 - **Dados operacionais:** clientes, vendas, histórico etc., que não devem permanecer.
-- **Dados essenciais de inicialização:** parâmetros, perfis, tabelas de referência ou cadastros indispensáveis, quando expressamente definidos no modelo.
+- **Dados essenciais de inicialização:** parâmetros, perfis, tabelas de referência ou cadastros indispensáveis, preservados conforme uma lista explícita e aprovada no modelo.
 
 Validar valores iniciais de generators/sequences e dependências de dados essenciais.
 
@@ -40,3 +40,7 @@ Uma versão homologada do modelo poderá ser disponibilizada na instalação **s
 ## Interface
 
 A funcionalidade poderá aparecer como **Restaurar configurações de fábrica** (EN: **Restore factory defaults**). Qualquer mudança visual deverá ser mostrada para aprovação antes de inclusão no aplicativo.
+
+## Decisão de produto confirmada
+
+A restauração de fábrica **deve manter dados essenciais de configuração e inicialização**, além de todos os objetos estruturais previstos no modelo homologado. Registros operacionais (por exemplo, clientes, vendas e históricos) não serão transferidos. A seleção dos dados essenciais será explícita por modelo, com conferência de dependências e relatório da operação. Na ausência de classificação confiável, a operação deverá ser bloqueada, nunca excluir dados por suposição.
