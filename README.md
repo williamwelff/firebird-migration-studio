@@ -6,6 +6,14 @@ Aplicativo desktop **open source e multiplataforma** para **migração, compara�
 
 > **Estado atual: protótipo inicial em desenvolvimento.** Ainda não existe uma versão pronta para operações reais em produção.
 
+## Esboços do projeto (visão conceitual)
+
+As imagens abaixo ilustram a proposta para quem deseja conhecer o projeto. **São conceitos, não capturas de tela nem funcionalidades já homologadas.**
+
+![Visão conceitual dos módulos do Firebird Migration Studio](docs/images/product-overview.svg)
+
+![Fluxo conceitual de comparação somente leitura](docs/images/comparison-flow.svg)
+
 ## Objetivos
 
 - Atender Windows 10/11, Ubuntu e Fedora com C#, .NET 10 e Avalonia UI.
