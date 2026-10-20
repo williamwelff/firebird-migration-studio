@@ -15,6 +15,60 @@ public sealed class MainWindow : Window
     private static readonly SolidColorBrush Branco = new(Color.Parse("#FFFFFF"));
 
     private readonly ContentControl _page = new();
+    private string _activePage = "Início";
+    private bool _english;
+    private readonly Dictionary<Control, string> _originalLabels = new();
+    private static readonly Dictionary<string, string> English = new()
+    {
+        ["Início"] = "Home", ["Conexões"] = "Connections", ["Migrar"] = "Migrate",
+        ["Comparar"] = "Compare", ["Sincronizar"] = "Synchronize",
+        ["Relatórios"] = "Reports", ["Configurações"] = "Settings",
+        ["Prévia de interface"] = "Interface preview",
+        ["Migração, comparação e sincronização de bancos Firebird"] = "Firebird database migration, comparison and synchronization",
+        ["Protótipo seguro · sem operações reais"] = "Safe preview · no real operations",
+        ["Bem-vindo ao Firebird Migration Studio"] = "Welcome to Firebird Migration Studio",
+        ["Selecione uma ferramenta. Esta versão apresenta somente a interface."] = "Select a tool. This version only previews the interface.",
+        ["Transferir bancos entre versões do Firebird."] = "Transfer databases between Firebird versions.",
+        ["Encontrar diferenças de estrutura e registros."] = "Find schema and record differences.",
+        ["Revisar correções propostas para o alvo."] = "Review proposed target corrections.",
+        ["Consultar registros e resultados."] = "View logs and results.",
+        ["Segurança em primeiro lugar"] = "Safety first",
+        ["A comparação será somente leitura. A sincronização exigirá plano revisado, backup e autorização. Nenhum banco será modificado nesta prévia."] = "Comparison will be read-only. Synchronization will require a reviewed plan, backup and authorization. No databases will be modified in this preview.",
+        ["Migração de bancos de dados"] = "Database migration",
+        ["Assistente planejado: backup e restauração para Firebird 5.0."] = "Planned assistant: backup and restore to Firebird 5.0.",
+        ["Selecionar versões"] = "Select versions",
+        ["Versão do Firebird de origem"] = "Source Firebird version",
+        ["Versão de destino: Firebird 5.0 (fixa)"] = "Destination version: Firebird 5.0 (fixed)",
+        ["Etapas previstas"] = "Planned steps",
+        ["1. Origem → 2. Backup → 3. Destino → 4. Restauração → 5. Verificação. Nenhuma operação real está habilitada."] = "1. Source → 2. Backup → 3. Target → 4. Restore → 5. Verify. No real operations are enabled.",
+        ["Selecione a versão de origem. A migração real ainda não está habilitada."] = "Select the source version. Real migration is not enabled yet.",
+        ["Migração planejada:"] = "Planned migration:",
+        ["Execução ainda indisponível."] = "Execution is not yet available.",
+        ["Conexões com bancos de dados"] = "Database connections",
+        ["Configure os dados de origem e destino. Nenhuma senha é armazenada nesta prévia."] = "Configure source and target. No passwords are stored in this preview.",
+        ["Dados das conexões"] = "Connection details",
+        ["Banco master — referência protegida"] = "Master database — protected reference",
+        ["Banco alvo — destino futuro"] = "Target database — future destination",
+        ["Servidor"] = "Host", ["Porta"] = "Port", ["Banco ou alias"] = "Database or alias",
+        ["Usuário"] = "Username", ["Validar campos"] = "Validate fields",
+        ["Nenhuma conexão foi testada."] = "No connection has been tested.",
+        ["Campos válidos e endpoints informados distintos. Conexões reais ainda não testadas."] = "Fields are valid and the supplied endpoints are distinct. Real connections have not been tested.",
+        ["Caminho completo ou alias do banco"] = "Full database path or alias",
+        ["Comparação de bancos de dados"] = "Database comparison",
+        ["Análise da estrutura e dos registros entre master e alvo"] = "Schema and record analysis between master and target",
+        ["Resumo   ·   Tabelas   ·   Procedures   ·   Triggers   ·   Índices   ·   Registros"] = "Summary   ·   Tables   ·   Procedures   ·   Triggers   ·   Indexes   ·   Records",
+        ["Sincronização e correção"] = "Synchronization and correction",
+        ["Planejamento de alterações exclusivamente no banco alvo"] = "Plan changes exclusively for the target database",
+        ["1. Revisar   →   2. Configurar   →   3. Autorizar   →   4. Verificar"] = "1. Review   →   2. Configure   →   3. Authorize   →   4. Verify",
+        ["Histórico e resultados das operações"] = "Operation history and results",
+        ["Nenhuma operação real foi executada."] = "No real operation has been executed.",
+        ["Preferências e ferramentas"] = "Preferences and tools",
+        ["Recursos ainda indisponíveis nesta prévia."] = "Features are not yet available in this preview.",
+        ["Etapas e recursos previstos"] = "Planned steps and features",
+        ["Disponibilidade"] = "Availability",
+        ["Em desenvolvimento. A conexão, a comparação, o backup, o restore e a sincronização reais permanecem desabilitados."] = "Under development. Real connection, comparison, backup, restore and synchronization are disabled.",
+        ["Abrir "] = "Open "
+    };
     private readonly Dictionary<string, Button> _navigation = new();
     private readonly TextBox _masterHost = new() { Text = "localhost" };
     private readonly TextBox _masterPort = new() { Text = "3050" };
@@ -62,6 +116,23 @@ public sealed class MainWindow : Window
             Text = "●  Protótipo seguro · sem operações reais",
             Foreground = Cinza, VerticalAlignment = VerticalAlignment.Center
         };
+        var language = new ComboBox
+        {
+            ItemsSource = new[] { "Português (Brasil)", "English" },
+            SelectedIndex = 0, Width = 170,
+            Margin = new Thickness(14, 0, 0, 0)
+        };
+        language.SelectionChanged += (_, _) =>
+        {
+            _english = language.SelectedIndex == 1;
+            Navigate(_activePage);
+            ApplyLanguage(Content as Control);
+            Title = _english
+                ? "Firebird Migration Studio — Interface preview"
+                : "Firebird Migration Studio — Prévia de interface";
+        };
+        DockPanel.SetDock(language, Dock.Right);
+        header.Children.Add(language);
         DockPanel.SetDock(status, Dock.Right);
         header.Children.Add(status);
         header.Children.Add(new StackPanel
@@ -83,10 +154,12 @@ public sealed class MainWindow : Window
         root.Children.Add(right);
         Content = root;
         Navigate("Início");
+        ApplyLanguage(Content as Control);
     }
 
     private void Navigate(string page)
     {
+        _activePage = page;
         foreach (var item in _navigation)
         {
             item.Value.Background = item.Key == page ? Azul : Brushes.Transparent;
@@ -103,6 +176,7 @@ public sealed class MainWindow : Window
             "Relatórios" => Feature("Relatórios", "Histórico e resultados das operações", "Nenhuma operação real foi executada."),
             _ => Feature("Configurações", "Preferências e ferramentas", "Recursos ainda indisponíveis nesta prévia.")
         };
+        ApplyLanguage(Content as Control);
     }
 
     private Control Dashboard()
@@ -239,6 +313,48 @@ public sealed class MainWindow : Window
 
     private static StackPanel Entry(string label, TextBox input)
         => new() { Spacing = 4, Children = { new TextBlock { Text = label }, input } };
+
+
+    private void ApplyLanguage(Control? control)
+    {
+        if (control is null) return;
+        if (control is TextBlock text && text.Text is not null)
+        {
+            if (!_originalLabels.TryGetValue(text, out var pt))
+                _originalLabels[text] = pt = text.Text;
+            text.Text = Translate(pt);
+        }
+        if (control is Button button && button.Content is string buttonText)
+        {
+            if (!_originalLabels.TryGetValue(button, out var pt))
+                _originalLabels[button] = pt = buttonText;
+            button.Content = Translate(pt);
+        }
+        if (control is TextBox input && input.Watermark is string watermark)
+        {
+            if (!_originalLabels.TryGetValue(input, out var pt))
+                _originalLabels[input] = pt = watermark;
+            input.Watermark = Translate(pt);
+        }
+
+        if (control is Panel panel)
+            foreach (var child in panel.Children) ApplyLanguage(child);
+        else if (control is Border border)
+            ApplyLanguage(border.Child);
+        else if (control is ScrollViewer scroller)
+            ApplyLanguage(scroller.Content as Control);
+        else if (control is ContentControl presenter && presenter.Content is Control child)
+            ApplyLanguage(child);
+    }
+
+    private string Translate(string pt)
+    {
+        if (!_english) return pt;
+        if (English.TryGetValue(pt, out var exact)) return exact;
+        foreach (var pair in English.OrderByDescending(p => p.Key.Length))
+            pt = pt.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
+        return pt;
+    }
 
     private static ConnectionProfile ReadProfile(string label, TextBox host, TextBox port, TextBox path, TextBox user)
         => new(label, host.Text?.Trim() ?? "", int.TryParse(port.Text, out var p) ? p : 0,
