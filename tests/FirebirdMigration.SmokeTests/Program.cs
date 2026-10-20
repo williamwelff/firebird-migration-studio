@@ -71,8 +71,43 @@ Assert(StructuralComparer.Compare(fkMaster, fkTarget).Count == 1,
     "Detectar diferença na regra ON DELETE");
 Assert(StructuralComparer.Compare(fkMaster, fkMaster).Count == 0,
     "Não sinalizar FK idêntica");
-Console.WriteLine("25 verificações locais de perfis, versões, reset e metadados concluídas.");
+var recordMaster = new RecordSnapshot("CLIENTES", new[] { "ID" }, new IReadOnlyDictionary<string, object?>[]
+{
+    new Dictionary<string, object?> { ["ID"] = 1, ["NOME"] = "Ana", ["FOTO"] = new byte[] { 1, 2 } },
+    new Dictionary<string, object?> { ["ID"] = 2, ["NOME"] = null }
+});
+var recordTarget = new RecordSnapshot("CLIENTES", new[] { "ID" }, new IReadOnlyDictionary<string, object?>[]
+{
+    new Dictionary<string, object?> { ["ID"] = 1, ["NOME"] = "Ana Maria", ["FOTO"] = new byte[] { 1, 2 } },
+    new Dictionary<string, object?> { ["ID"] = 3, ["NOME"] = "Carlos" }
+});
+var recordDiff = RecordComparer.Compare(recordMaster, recordTarget);
+Assert(recordDiff.Count == 3, "Inserção, remoção e atualização previstas");
+Assert(recordDiff.Any(x => x.Kind == RecordDifferenceKind.MissingInTarget), "Registro ausente no alvo");
+Assert(recordDiff.Any(x => x.Kind == RecordDifferenceKind.ExtraInTarget), "Registro adicional no alvo");
+Assert(recordDiff.Single(x => x.Kind == RecordDifferenceKind.DifferentValues).DifferentColumns.SequenceEqual(new[] { "NOME" }),
+    "Comparação de BLOBs byte a byte");
+Assert(RecordComparer.Compare(recordMaster, recordMaster).Count == 0, "Snapshots idênticos");
+var duplicated = new RecordSnapshot("CLIENTES", new[] { "ID" }, new IReadOnlyDictionary<string, object?>[]
+{
+    new Dictionary<string, object?> { ["ID"] = 1 },
+    new Dictionary<string, object?> { ["ID"] = 1 }
+});
+AssertThrows(() => RecordComparer.Compare(duplicated, recordMaster), "Bloquear chaves duplicadas");
+var nullKey = new RecordSnapshot("CLIENTES", new[] { "ID" }, new IReadOnlyDictionary<string, object?>[]
+{
+    new Dictionary<string, object?> { ["ID"] = null }
+});
+AssertThrows(() => RecordComparer.Compare(nullKey, recordMaster), "Bloquear chave nula");
+Console.WriteLine("32 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
+}
+
+static void AssertThrows(Action action, string message)
+{
+    try { action(); }
+    catch (ArgumentException) { return; }
+    throw new InvalidOperationException(message);
 }
