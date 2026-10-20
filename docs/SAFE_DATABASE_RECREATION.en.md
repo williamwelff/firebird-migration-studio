@@ -35,3 +35,7 @@ A permitted, verified template may be bundled with the installer; otherwise the 
 ## UI
 
 Proposed name: **Restore factory defaults** (PT-BR: **Restaurar configurações de fábrica**). Visual implementation requires prior approval.
+
+## Confirmed product decision
+
+Factory restoration **must preserve essential configuration and initialization records** in addition to the approved schema. Operational records (for example, customers, sales and history) must not be copied. Essential seed-data selection must be explicit per template and dependency-checked with an audit report. If records cannot be classified reliably, block the operation rather than guessing.
