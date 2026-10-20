@@ -108,7 +108,18 @@ Assert(preview.Changes.Single(x => x.Action == ProposedRecordAction.ReviewExtraR
 Assert(!preview.CanExecute, "A prévia nunca pode executar SQL");
 Assert(RecordSyncPlanner.Preview(Array.Empty<RecordDifference>()).Changes.Count == 0,
     "Plano vazio é permitido");
-Console.WriteLine("38 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
+var query = RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 100);
+Assert(query.Contains("FIRST 100 SKIP @skip", StringComparison.Ordinal), "Limite e paginação");
+Assert(query.Contains("ORDER BY \\"ID\\"", StringComparison.Ordinal), "Ordenação por chave");
+AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES; DROP TABLE CLIENTES", new[] { "ID" }, 100),
+    "Bloquear nome de tabela inseguro");
+AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID DESC" }, 100),
+    "Bloquear injeção em colunas de chave");
+AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 0),
+    "Bloquear tamanho de página zero");
+AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 1001),
+    "Bloquear tamanho acima do máximo");
+Console.WriteLine("44 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
