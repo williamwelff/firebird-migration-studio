@@ -51,6 +51,10 @@ public sealed class MainWindow : Window
         ["Banco alvo — destino futuro"] = "Target database — future destination",
         ["Servidor"] = "Host", ["Porta"] = "Port", ["Banco ou alias"] = "Database or alias",
         ["Usuário"] = "Username", ["Validar campos"] = "Validate fields",
+        ["Senha (não armazenada)"] = "Password (not stored)",
+        ["Testar conexão master"] = "Test master connection",
+        ["Testar conexão alvo"] = "Test target connection",
+        ["Testando conexão..."] = "Testing connection...",
         ["Nenhuma conexão foi testada."] = "No connection has been tested.",
         ["Campos válidos e endpoints informados distintos. Conexões reais ainda não testadas."] = "Fields are valid and the supplied endpoints are distinct. Real connections have not been tested.",
         ["Caminho completo ou alias do banco"] = "Full database path or alias",
@@ -78,6 +82,8 @@ public sealed class MainWindow : Window
     private readonly TextBox _targetPort = new() { Text = "3055" };
     private readonly TextBox _targetPath = new() { Watermark = "Caminho completo ou alias do banco" };
     private readonly TextBox _targetUser = new() { Text = "SYSDBA" };
+    private readonly TextBox _masterPassword = new() { PasswordChar = '●' };
+    private readonly TextBox _targetPassword = new() { PasswordChar = '●' };
     private readonly TextBlock _validation = new() { Text = "Nenhuma conexão foi testada.", TextWrapping = TextWrapping.Wrap };
 
     public MainWindow()
@@ -265,13 +271,40 @@ public sealed class MainWindow : Window
         columns.Children.Add(Entry("Porta", _masterPort));
         columns.Children.Add(Entry("Banco ou alias", _masterPath));
         columns.Children.Add(Entry("Usuário", _masterUser));
+        columns.Children.Add(Entry("Senha (não armazenada)", _masterPassword));
         columns.Children.Add(new Separator());
         columns.Children.Add(new TextBlock { Text = "Banco alvo — destino futuro", FontSize = 18, FontWeight = FontWeight.SemiBold });
         columns.Children.Add(Entry("Servidor", _targetHost));
         columns.Children.Add(Entry("Porta", _targetPort));
         columns.Children.Add(Entry("Banco ou alias", _targetPath));
         columns.Children.Add(Entry("Usuário", _targetUser));
+        columns.Children.Add(Entry("Senha (não armazenada)", _targetPassword));
         columns.Children.Add(validate);
+        var testMaster = new Button { Content = "Testar conexão master", HorizontalAlignment = HorizontalAlignment.Left };
+        var testTarget = new Button { Content = "Testar conexão alvo", HorizontalAlignment = HorizontalAlignment.Left };
+        async Task RunProbeAsync(bool isMaster)
+        {
+            var button = isMaster ? testMaster : testTarget;
+            var profile = isMaster
+                ? ReadProfile("Master", _masterHost, _masterPort, _masterPath, _masterUser)
+                : ReadProfile("Alvo", _targetHost, _targetPort, _targetPath, _targetUser);
+            var password = isMaster ? _masterPassword.Text ?? "" : _targetPassword.Text ?? "";
+            button.IsEnabled = false;
+            _validation.Text = _english ? "Testing connection..." : "Testando conexão...";
+            try
+            {
+                var result = await FirebirdConnectionProbe.TestAsync(profile, password);
+                _validation.Text = result.Success
+                    ? (_english ? $"Connected. Server: {result.ServerVersion}. No data changed."
+                        : $"Conectado. Servidor: {result.ServerVersion}. Nenhum dado alterado.")
+                    : (_english ? "Connection failed. Check server, port, database, username, password and authentication." : result.Message);
+            }
+            finally { button.IsEnabled = true; }
+        }
+        testMaster.Click += async (_, _) => await RunProbeAsync(true);
+        testTarget.Click += async (_, _) => await RunProbeAsync(false);
+        columns.Children.Add(testMaster);
+        columns.Children.Add(testTarget);
         columns.Children.Add(_validation);
         return Page("Conexões com bancos de dados",
             "Configure os dados de origem e destino. Nenhuma senha é armazenada nesta prévia.",
