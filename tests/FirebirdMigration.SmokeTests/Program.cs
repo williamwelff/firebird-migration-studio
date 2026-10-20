@@ -50,7 +50,18 @@ var withDifferentCharset = new DatabaseSchema(new[]
 });
 Assert(SchemaComparer.Compare(withCharacters, withDifferentCharset).Count == 1,
     "Detectar charset diferente");
-Console.WriteLine("19 verificações locais de perfis, versões, reset e metadados concluídas.");
+var structuralMaster = new StructuralSnapshot(
+    new[] { new IndexDefinition("CLIENTES", "IDX_NOME", false, false, new[] { "NOME" }) },
+    new[] { new KeyDefinition("CLIENTES", "PK_CLIENTES", "PRIMARY KEY", new[] { "ID" }, null) });
+var structuralTarget = new StructuralSnapshot(
+    new[] { new IndexDefinition("CLIENTES", "IDX_NOME", false, true, new[] { "NOME" }) },
+    Array.Empty<KeyDefinition>());
+var structuralDiff = StructuralComparer.Compare(structuralMaster, structuralTarget);
+Assert(structuralDiff.Count == 2, "Duas diferenças de estrutura");
+Assert(structuralDiff.Any(x => x.ObjectType == "Índice" && x.Kind == "Definição diferente"), "Direção do índice");
+Assert(structuralDiff.Any(x => x.ObjectType == "Restrição" && x.Kind == "Ausente no alvo"), "PK ausente");
+Assert(StructuralComparer.Compare(structuralMaster, structuralMaster).Count == 0, "Estruturas idênticas");
+Console.WriteLine("23 verificações locais de perfis, versões, reset e metadados concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
