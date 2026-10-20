@@ -110,7 +110,7 @@ Assert(RecordSyncPlanner.Preview(Array.Empty<RecordDifference>()).Changes.Count 
     "Plano vazio é permitido");
 var query = RecordPageReader.BuildQuery("CLIENTES", new[] { "ID" }, 100);
 Assert(query.Contains("FIRST 100 SKIP @skip", StringComparison.Ordinal), "Limite e paginação");
-Assert(query.Contains("ORDER BY \\"ID\\"", StringComparison.Ordinal), "Ordenação por chave");
+Assert(query.Contains("ORDER BY " + (char)34 + "ID" + (char)34, StringComparison.Ordinal), "Ordenação por chave");
 AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES; DROP TABLE CLIENTES", new[] { "ID" }, 100),
     "Bloquear nome de tabela inseguro");
 AssertThrows(() => RecordPageReader.BuildQuery("CLIENTES", new[] { "ID DESC" }, 100),
