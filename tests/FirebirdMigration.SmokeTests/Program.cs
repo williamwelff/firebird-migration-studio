@@ -99,7 +99,16 @@ var nullKey = new RecordSnapshot("CLIENTES", new[] { "ID" }, new IReadOnlyDictio
     new Dictionary<string, object?> { ["ID"] = null }
 });
 AssertThrows(() => RecordComparer.Compare(nullKey, recordMaster), "Bloquear chave nula");
-Console.WriteLine("32 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
+var preview = RecordSyncPlanner.Preview(recordDiff);
+Assert(preview.InsertCount == 1, "Prévia de inserção");
+Assert(preview.UpdateCount == 1, "Prévia de atualização");
+Assert(preview.ExtraTargetCount == 1, "Linha excedente exige revisão");
+Assert(preview.Changes.Single(x => x.Action == ProposedRecordAction.ReviewExtraRow).RequiresManualReview,
+    "Registro adicional deve exigir revisão");
+Assert(!preview.CanExecute, "A prévia nunca pode executar SQL");
+Assert(RecordSyncPlanner.Preview(Array.Empty<RecordDifference>()).Changes.Count == 0,
+    "Plano vazio é permitido");
+Console.WriteLine("38 verificações locais de perfis, versões, reset, metadados e registros concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
