@@ -7,7 +7,8 @@ public sealed record IndexDefinition(string Table, string Name, bool Unique, boo
     IReadOnlyList<string> Columns);
 
 public sealed record KeyDefinition(string Table, string Name, string Kind,
-    IReadOnlyList<string> Columns, string? ReferencedTable);
+    IReadOnlyList<string> Columns, string? ReferencedTable,
+    string? OnUpdate = null, string? OnDelete = null);
 
 public sealed record StructuralSnapshot(IReadOnlyList<IndexDefinition> Indexes,
     IReadOnlyList<KeyDefinition> Keys);
@@ -28,6 +29,7 @@ public static class StructuralComparer
         CompareObjects(master.Keys, target.Keys, "Restrição",
             x => x.Table + "\u001f" + x.Name,
             (a, b) => a.Kind == b.Kind && a.ReferencedTable == b.ReferencedTable &&
+                      a.OnUpdate == b.OnUpdate && a.OnDelete == b.OnDelete &&
                       a.Columns.SequenceEqual(b.Columns, StringComparer.Ordinal),
             x => (x.Table, x.Name), changes);
         return changes.OrderBy(x => x.ObjectType, StringComparer.Ordinal)
@@ -66,7 +68,7 @@ public static class StructuralComparer
 
 /// <summary>
 /// Leitor experimental dos catálogos Firebird, apenas para índices de colunas
-/// e PK/UNIQUE/FK. Não inclui regras de CASCADE, expressões ou CHECK.
+/// e PK/UNIQUE/FK. Inclui ações referenciais, mas não expressões ou CHECK.
 /// </summary>
 public static class StructuralReader
 {
@@ -84,7 +86,8 @@ public static class StructuralReader
     private const string KeySql = """
         SELECT TRIM(rc.RDB$RELATION_NAME), TRIM(rc.RDB$CONSTRAINT_NAME),
                TRIM(rc.RDB$CONSTRAINT_TYPE), TRIM(s.RDB$FIELD_NAME),
-               s.RDB$FIELD_POSITION, TRIM(reftable.RDB$RELATION_NAME)
+               s.RDB$FIELD_POSITION, TRIM(reftable.RDB$RELATION_NAME),
+               TRIM(ref.RDB$UPDATE_RULE), TRIM(ref.RDB$DELETE_RULE)
         FROM RDB$RELATION_CONSTRAINTS rc
         JOIN RDB$RELATIONS r ON r.RDB$RELATION_NAME = rc.RDB$RELATION_NAME
         JOIN RDB$INDEX_SEGMENTS s ON s.RDB$INDEX_NAME = rc.RDB$INDEX_NAME
@@ -131,7 +134,7 @@ public static class StructuralReader
             }
         }
 
-        var keyRows = new Dictionary<string, (string Table, string Name, string Kind, string? Referenced, List<string> Columns)>(StringComparer.Ordinal);
+        var keyRows = new Dictionary<string, (string Table, string Name, string Kind, string? Referenced, string? UpdateRule, string? DeleteRule, List<string> Columns)>(StringComparer.Ordinal);
         await using (var cmd = connection.CreateCommand())
         {
             cmd.Transaction = (FbTransaction)transaction;
@@ -144,7 +147,9 @@ public static class StructuralReader
                 var key = table + "\u001f" + name;
                 if (!keyRows.TryGetValue(key, out var item))
                     item = (table, name, reader.GetString(2).TrimEnd(),
-                        reader.IsDBNull(5) ? null : reader.GetString(5).TrimEnd(), new List<string>());
+                        reader.IsDBNull(5) ? null : reader.GetString(5).TrimEnd(),
+                        reader.IsDBNull(6) ? null : reader.GetString(6).TrimEnd(),
+                        reader.IsDBNull(7) ? null : reader.GetString(7).TrimEnd(), new List<string>());
                 item.Columns.Add(reader.GetString(3).TrimEnd());
                 keyRows[key] = item;
             }
@@ -153,6 +158,6 @@ public static class StructuralReader
         await transaction.CommitAsync(token);
         return new StructuralSnapshot(
             indexRows.Values.Select(x => new IndexDefinition(x.Table, x.Name, x.Unique, x.Descending, x.Columns)).ToList(),
-            keyRows.Values.Select(x => new KeyDefinition(x.Table, x.Name, x.Kind, x.Columns, x.Referenced)).ToList());
+            keyRows.Values.Select(x => new KeyDefinition(x.Table, x.Name, x.Kind, x.Columns, x.Referenced, x.UpdateRule, x.DeleteRule)).ToList());
     }
 }
