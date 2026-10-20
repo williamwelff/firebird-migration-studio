@@ -127,7 +127,16 @@ AssertThrows(() => PrimaryKeyValidator.ValidateSelection(new[] { "ID", "FILIAL" 
     "Bloquear ordem incorreta de PK composta");
 AssertThrows(() => PrimaryKeyValidator.ValidateSelection(new[] { "OUTRO" }, new[] { "ID" }),
     "Bloquear chave distinta da PK");
-Console.WriteLine("49 verificações locais de perfis, versões, reset, metadados, registros e PK concluídas.");
+var keyset = KeysetQueryBuilder.Build("CLIENTES", new[] { "FILIAL", "ID" }, 100, true);
+Assert(!keyset.Contains("SKIP", StringComparison.Ordinal), "Sem deslocamento SKIP");
+Assert(keyset.Contains("\"FILIAL\" > @k0", StringComparison.Ordinal), "Cursor por primeira coluna");
+Assert(keyset.Contains("\"FILIAL\" = @k0 AND \"ID\" > @k1", StringComparison.Ordinal),
+    "Cursor composto lexicográfico");
+AssertThrows(() => KeysetQueryBuilder.Build("CLIENTES; DROP TABLE X", new[] { "ID" }, 100, true),
+    "Rejeitar injeção de identificador");
+AssertThrows(() => KeysetQueryBuilder.Build("CLIENTES", new[] { "ID" }, 1001, false),
+    "Rejeitar página excessiva");
+Console.WriteLine("54 verificações locais de perfis, versões, reset, metadados, registros e paginação concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
