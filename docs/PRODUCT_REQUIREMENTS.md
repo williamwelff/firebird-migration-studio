@@ -1,85 +1,83 @@
-# Product requirements — Firebird Migration Studio
+# Requisitos do produto — Firebird Migration Studio
 
-## 1. Product scope
+## 1. Objetivo
 
-A cross-platform graphical desktop application for technicians to migrate Firebird 2.5 databases to Firebird 5.0, compare independent Firebird databases, and optionally synchronize a target to a designated master. **Comparison and migration are separate workflows.**
+Aplicação desktop multiplataforma para técnicos migrarem bancos Firebird 2.5 para 5.0, compararem bancos independentes e, mediante autorização, sincronizarem um **banco alvo** com um **banco master**. Migração, comparação e sincronização são fluxos distintos.
 
-## 2. Supported operating systems
+## 2. Sistemas operacionais
 
-Initial release targets:
 - Windows 10/11 x64
 - Ubuntu LTS x64
 - Fedora x64
 
-Implementation: C# and .NET 10 with Avalonia UI, avoiding Windows-only APIs. Build and test each platform independently, including GUI rendering, process launching, library discovery, path handling, authentication and installation. Proposed artifacts: Windows installer, Ubuntu .deb and Fedora .rpm. No executables or packages are available yet.
+Implementação em C# e .NET 10 com Avalonia UI, sem dependência de APIs exclusivas do Windows. Cada plataforma deverá ser testada individualmente, inclusive a interface gráfica. Distribuição futura em instalador Windows, pacote `.deb` e pacote `.rpm`.
 
-## 3. Migration mode
+## 3. Migração
 
-1. Select an existing Firebird 2.5 source and a **different** destination database path/instance on Firebird 5.0.
-2. Detect source/destination versions and local utility paths; perform permission, connection, backup space and risk checks.
-3. Use Firebird 2.5's gbak for a logical backup and Firebird 5.0's gbak to restore into a *new* destination, without asking the technician to type commands.
-4. Capture progress, exit status, stdout/stderr, and actionable diagnostics. Protect credentials from command-line process listings/logs where possible.
-5. Verify opening the destination, ODS, important object metadata, record counts, and application compatibility checks.
-6. Report that users/passwords and external libraries/drivers may require separate migration.
+1. Selecionar banco Firebird 2.5 e destino **diferente** no Firebird 5.0.
+2. Verificar versões, permissões, espaço, conexões e utilitários disponíveis.
+3. Gerar backup lógico com `gbak` 2.5 e restaurar em novo banco com `gbak` 5.0, sem pedir comandos ao operador.
+4. Exibir progresso, códigos de saída, erros e logs sem revelar credenciais.
+5. Conferir acesso ao destino, ODS, objetos e contagens de registros.
+6. Alertar sobre migração separada de usuários, senhas, bibliotecas externas e drivers.
 
-## 4. Comparison mode
+## 4. Comparação
 
-Define **Master (reference)** and **Target (candidate)** connections. Compare schema and data separately. Allow comparison without any writes.
+Selecionar **Master (referência)** e **Alvo (destino)**. Permitir comparação somente leitura, sem sincronização automática.
 
-### Schema comparison
+### Estrutura
 
-Compare user tables, fields, types, nullability, defaults, computed fields, keys, constraints, indexes, views, stored procedures, triggers, sequences/generators and dependencies as supported per server version.
+Comparar tabelas, campos, tipos, nulidade, valores padrão, chaves, restrições, índices, views, procedures, triggers, sequences/generators e dependências, conforme as versões suportadas. Ignorar diferenças cosméticas sem ocultar diferenças semânticas. Não sincronizar cegamente metadados internos ou características legítimas de versões distintas.
 
-- Normalize irrelevant formatting but preserve semantic differences.
-- Account for valid version-specific metadata differences: do not blindly synchronize system metadata.
-- Group differences by object and risk; display source/target definitions and generated actions.
+### Registros
 
-### Data comparison
+- Identificar tabelas por nome ou mapeamento explícito.
+- Identificar linhas por chave primária ou chave única estável aprovada pelo usuário.
+- Apontar registros ausentes, diferentes e excedentes; exclusões são opcionais.
+- Suportar BLOB, NULL, datas, valores numéricos, codificações e regras de equivalência.
+- Processar grandes volumes em lotes, com cancelamento e progresso.
+- Controlar concorrência: usar instantâneos transacionais adequados ou janela de manutenção.
 
-- Table matching by name or explicit mapping; row matching by primary key or a user-approved stable unique key.
-- For tables without reliable keys: report differences or require explicit mapping rather than guessing row identity.
-- Compare inserts, updates and optionally deletes; allow per-table/per-column exclusions and normalization rules.
-- Support BLOBs, NULLs, floating point precision rules, dates, timestamps, time zones (where applicable), and character encodings carefully.
-- Use streaming/batched reads and stable sorting/keyset pagination; support large databases and cancellation.
-- Avoid false results during concurrent writes: require controlled snapshots or a documented maintenance window.
+## 5. Sincronização
 
-## 5. Target synchronization
+- **Nunca escrever no master.**
+- Propor um plano determinístico de alterações, com dependências e valores parametrizados.
+- Mostrar SQL/ações propostas, quantidade estimada, riscos e simulação.
+- Exigir consentimento e backup testado antes da execução.
+- Bloquear exclusões por padrão e pedir confirmação específica.
+- Detectar mudanças concorrentes entre análise e aplicação.
+- Executar em transações apropriadas e explicar limites de rollback em DDL.
+- Verificar resultado e registrar auditoria, sem alterar generators ou desativar triggers inadvertidamente.
 
-- **Master never changes.** Target is writable only after an explicit switch from preview to apply.
-- Generate a deterministic change plan with object dependencies and SQL/data parameterization.
-- Provide dry-run, affected row counts, risk warnings and downloadable audit report.
-- Apply changes in appropriately bounded transactions with error reporting, and recognize that DDL/data operations may require different transaction boundaries.
-- Deleting rows is disabled by default and requires separate approval.
-- Re-check target state before application to detect concurrent modifications. Do not assume long-running diff results are still current.
-- Require a tested backup/recovery path before applying changes and allow post-apply verification.
-- Do not suppress trigger side effects or alter generators automatically without a reviewed policy.
+## 6. Jornada do técnico
 
-## 6. User workflow
+1. Escolher Migrar, Comparar ou Sincronizar.
+2. Informar perfis master/origem e alvo/destino; validar.
+3. Escolher escopo e regras.
+4. Analisar diferenças e riscos.
+5. Aprovar plano quando houver escrita.
+6. Executar, validar e exportar relatório.
 
-1. Select **Migrate**, **Compare**, or **Synchronize**.
-2. Configure master/source and target profiles; test connections.
-3. Choose scope and comparison settings.
-4. Run analysis with progress; inspect differences and risks.
-5. If applicable, approve a proposed target-only plan and prerequisites.
-6. Execute, validate and export result/logs.
+## 7. Critérios de aceitação
 
-## 7. Acceptance tests
+- Migração 2.5 → 5.0 testada em banco descartável com relacionamentos, triggers, procedures, BLOBs e generators.
+- Comparação realiza **zero escritas** nos dois bancos.
+- Diferenças de inserção, alteração e exclusão são classificadas corretamente.
+- Sincronização modifica somente o alvo e exige autorização específica para exclusão.
+- Falhas preservam o master, geram diagnóstico e indicam recuperação.
+- Grandes tabelas não precisam caber inteiras em memória.
+- Compilação e testes reais nos desktops Windows, Ubuntu e Fedora.
 
-- Firebird 2.5 -> 5.0 migration succeeds on a disposable sample with tables, FK relationships, triggers, procedures, generators and BLOBs.
-- Compare-only mode produces **zero writes** to either database.
-- Insert/update/delete differences are correctly classified using stable keys.
-- Sync changes only the designated target and respects explicit deletion opt-in.
-- Failed operations report exact steps, preserve master and provide a recovery path.
-- Large tables do not require full in-memory materialization.
-- Windows, Ubuntu and Fedora builds run through smoke tests on supported desktop sessions.
-- Automated test fixtures include charset differences, NULLs, BLOBs, conflicts, schema drift and concurrent edits.
+## 8. Etapas de implementação
 
-## 8. Development phases
+1. Base multiplataforma, assistente de conexões, logs.
+2. Detecção de versões e migração com backup/restore.
+3. Comparação somente leitura de estrutura e registros.
+4. Pré-visualização, aprovação e sincronização segura.
+5. Instaladores, testes de plataforma e manual para técnicos.
 
-1. Repo/tooling, cross-platform Avalonia shell, connection wizard, structured logs.
-2. Firebird version detection, gbak migration wizard, disposable integration tests.
-3. Read-only metadata/schema diff and data diff with key mapping.
-4. Target synchronization preview, safe apply workflow, audit and rollback procedures.
-5. Platform packages, automated release tests and technician-friendly documentation.
+## 9. Regra de aprovação visual
 
-Nothing in this document represents already implemented or validated functionality.
+Propostas de layout, identidade visual, ícones, cores e fluxo de telas serão **apresentadas ao responsável antes de sua inclusão no código da interface**. A documentação e os módulos internos não dependem dessa aprovação.
+
+**Este documento descreve requisitos, não funcionalidades já homologadas.**
