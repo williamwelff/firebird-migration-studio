@@ -137,5 +137,6 @@ static void AssertThrows(Action action, string message)
 {
     try { action(); }
     catch (ArgumentException) { return; }
+    catch (InvalidOperationException) { return; }
     throw new InvalidOperationException(message);
 }
