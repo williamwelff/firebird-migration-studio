@@ -97,7 +97,7 @@ public sealed class MainWindow : Window
         {
             "Início" => Dashboard(),
             "Conexões" => Connections(),
-            "Migrar" => Feature("Migração de bancos de dados", "Assistente de backup e restauração Firebird 2.5 → 5.0", "1. Origem   →   2. Backup   →   3. Destino   →   4. Restauração   →   5. Verificação"),
+            "Migrar" => MigrationPreview(),
             "Comparar" => Feature("Comparação de bancos de dados", "Análise da estrutura e dos registros entre master e alvo", "Resumo   ·   Tabelas   ·   Procedures   ·   Triggers   ·   Índices   ·   Registros"),
             "Sincronizar" => Feature("Sincronização e correção", "Planejamento de alterações exclusivamente no banco alvo", "1. Revisar   →   2. Configurar   →   3. Autorizar   →   4. Verificar"),
             "Relatórios" => Feature("Relatórios", "Histórico e resultados das operações", "Nenhuma operação real foi executada."),
@@ -125,6 +125,48 @@ public sealed class MainWindow : Window
             actions,
             Card("Segurança em primeiro lugar",
                 "A comparação será somente leitura. A sincronização exigirá plano revisado, backup e autorização. Nenhum banco será modificado nesta prévia.", null, 930));
+    }
+
+    private Control MigrationPreview()
+    {
+        var version = new ComboBox
+        {
+            Width = 220,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            ItemsSource = MigrationVersions.AllowedSourceVersions,
+            SelectedIndex = 0
+        };
+        var status = new TextBlock
+        {
+            Text = "Selecione a versão de origem. A migração real ainda não está habilitada.",
+            Foreground = Cinza,
+            TextWrapping = TextWrapping.Wrap
+        };
+        version.SelectionChanged += (_, _) =>
+        {
+            var source = version.SelectedItem as string;
+            var issues = MigrationVersions.Validate(source, MigrationVersions.TargetVersion);
+            status.Text = issues.Count == 0
+                ? $"Migração planejada: Firebird {source} → Firebird 5.0. Execução ainda indisponível."
+                : string.Join(Environment.NewLine, issues);
+        };
+        var form = new StackPanel
+        {
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = "Versão do Firebird de origem" },
+                version,
+                new TextBlock { Text = "Versão de destino: Firebird 5.0 (fixa)" },
+                status
+            }
+        };
+        return Page("Migração de bancos de dados",
+            "Assistente planejado: backup e restauração para Firebird 5.0.",
+            Card("Selecionar versões", form, null, 700),
+            Card("Etapas previstas",
+                "1. Origem → 2. Backup → 3. Destino → 4. Restauração → 5. Verificação. Nenhuma operação real está habilitada.",
+                null, 930));
     }
 
     private Control Connections()
