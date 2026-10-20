@@ -15,7 +15,23 @@ Assert(ResetSafety.Validate(new ResetRequest("Master", ResetMode.EmptyDatabase, 
 Assert(ResetSafety.Validate(new ResetRequest("Alvo", ResetMode.SchemaOnly, false, false, true, true)).Count > 0, "Backup obrigatório");
 Assert(ResetSafety.Validate(new ResetRequest("Alvo", ResetMode.EmptyDatabase, false, true, true, false)).Count > 0, "Destino separado obrigatório");
 Assert(ResetSafety.Validate(new ResetRequest("Novo", ResetMode.EmptyDatabase, false, true, true, true)).Count == 0, "Plano seguro com pré-requisitos");
-Console.WriteLine("13 verificações de perfis, versões e requisitos de recriação concluídas.");
+var masterSchema = new DatabaseSchema(new[]
+{
+    new ColumnDefinition("CLIENTES", "ID", 0, "8", 4, 0, true),
+    new ColumnDefinition("CLIENTES", "NOME", 1, "37", 50, 0, false)
+});
+var targetSchema = new DatabaseSchema(new[]
+{
+    new ColumnDefinition("CLIENTES", "ID", 0, "8", 4, 0, true),
+    new ColumnDefinition("CLIENTES", "NOME", 1, "37", 30, 0, false),
+    new ColumnDefinition("CLIENTES", "LEGADO", 2, "37", 10, 0, false)
+});
+var differences = SchemaComparer.Compare(masterSchema, targetSchema);
+Assert(differences.Count == 2, "Detectar duas diferenças");
+Assert(differences.Any(x => x.Kind == SchemaDifferenceKind.DifferentDefinition && x.Column == "NOME"), "Detectar mudança de definição");
+Assert(differences.Any(x => x.Kind == SchemaDifferenceKind.ExtraInTarget && x.Column == "LEGADO"), "Detectar campo extra");
+Assert(SchemaComparer.Compare(masterSchema, masterSchema).Count == 0, "Esquemas idênticos");
+Console.WriteLine("17 verificações locais de perfis, versões, reset e metadados concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
