@@ -6,6 +6,14 @@ Open-source cross-platform desktop application for **migration, comparison and c
 
 > **Status: early development preview.** It is not ready for real production migrations or synchronization.
 
+## Concept illustrations (planned product)
+
+These are conceptual illustrations for visitors, **not screenshots or claims that the planned features are working**.
+
+![Overview of Firebird Migration Studio modules](docs/images/product-overview.svg)
+
+![Conceptual read-only comparison workflow](docs/images/comparison-flow.svg)
+
 ## Goals
 
 - Target Windows 10/11, Ubuntu and Fedora with C#, .NET 10 and Avalonia UI.
