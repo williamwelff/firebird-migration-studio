@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 
-Aplicação desktop multiplataforma para técnicos migrarem bancos Firebird 2.5 para 5.0, compararem bancos independentes e, mediante autorização, sincronizarem um **banco alvo** com um **banco master**. Migração, comparação e sincronização são fluxos distintos.
+Aplicação desktop multiplataforma para técnicos migrarem bancos Firebird 2.5, 3.0 e 4.0 para 5.0, compararem bancos independentes e, mediante autorização, sincronizarem um **banco alvo** com um **banco master**. Migração, comparação e sincronização são fluxos distintos.
 
 ## 2. Sistemas operacionais
 
@@ -14,9 +14,9 @@ Implementação em C# e .NET 10 com Avalonia UI, sem dependência de APIs exclus
 
 ## 3. Migração
 
-1. Selecionar banco Firebird 2.5 e destino **diferente** no Firebird 5.0.
+1. Selecionar banco Firebird **2.5, 3.0 ou 4.0** e destino **diferente** no Firebird 5.0. As versões 3.5 e 4.5 não serão oferecidas, por não serem séries oficiais.
 2. Verificar versões, permissões, espaço, conexões e utilitários disponíveis.
-3. Gerar backup lógico com `gbak` 2.5 e restaurar em novo banco com `gbak` 5.0, sem pedir comandos ao operador.
+3. Gerar backup lógico com o `gbak` adequado à versão de origem (2.5, 3.0 ou 4.0) e restaurar em um novo banco com `gbak` 5.0, sem pedir comandos ao operador.
 4. Exibir progresso, códigos de saída, erros e logs sem revelar credenciais.
 5. Conferir acesso ao destino, ODS, objetos e contagens de registros.
 6. Alertar sobre migração separada de usuários, senhas, bibliotecas externas e drivers.
