@@ -74,4 +74,57 @@ public static class RecordPageReader
         await transaction.CommitAsync(cancellationToken);
         return rows;
     }
+    /// <summary>
+    /// Lê uma página usando o último valor da chave primária como cursor.
+    /// Cada chamada usa um snapshot independente: NÃO garante consistência entre páginas.
+    /// </summary>
+    public static async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> ReadKeysetPageAsync(
+        ConnectionProfile profile, string password, string table,
+        IReadOnlyList<string> keyColumns, IReadOnlyList<object>? lastKeyValues,
+        int pageSize, CancellationToken cancellationToken = default)
+    {
+        if (profile.Validate().Count != 0) throw new ArgumentException("Perfil inválido.", nameof(profile));
+        if (string.IsNullOrEmpty(password)) throw new ArgumentException("Senha obrigatória.", nameof(password));
+        if (lastKeyValues is not null &&
+            (lastKeyValues.Count != keyColumns.Count ||
+             lastKeyValues.Any(x => x is null || x is DBNull)))
+            throw new ArgumentException("Cursor incompleto ou com chave nula.", nameof(lastKeyValues));
+
+        var sql = KeysetQueryBuilder.Build(table, keyColumns, pageSize, lastKeyValues is not null);
+        var settings = new FbConnectionStringBuilder
+        {
+            DataSource = profile.Host, Port = profile.Port, Database = profile.DatabasePath,
+            UserID = profile.Username, Password = password, Pooling = false, ConnectionTimeout = 8
+        };
+        await using var connection = new FbConnection(settings.ToString());
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Snapshot, cancellationToken);
+        var declared = await PrimaryKeyValidator.ReadDeclaredAsync(
+            connection, (FbTransaction)transaction, table, cancellationToken);
+        PrimaryKeyValidator.ValidateSelection(keyColumns, declared);
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = (FbTransaction)transaction;
+        command.CommandText = sql;
+        if (lastKeyValues is not null)
+        {
+            for (var i = 0; i < lastKeyValues.Count; i++)
+                command.Parameters.AddWithValue("@k" + i, lastKeyValues[i]);
+        }
+        var rows = new List<IReadOnlyDictionary<string, object?>>();
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var row = new Dictionary<string, object?>(StringComparer.Ordinal);
+                for (var i = 0; i < reader.FieldCount; i++)
+                    row.Add(reader.GetName(i), await reader.IsDBNullAsync(i, cancellationToken)
+                        ? null : reader.GetValue(i));
+                rows.Add(row);
+            }
+        }
+        await transaction.CommitAsync(cancellationToken);
+        return rows;
+    }
+
 }
