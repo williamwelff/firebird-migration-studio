@@ -1,0 +1,58 @@
+name: Firebird real integration (disposable)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/FirebirdMigration.Core/**'
+      - 'tests/FirebirdMigration.IntegrationTests/**'
+      - 'tests/integration/**'
+      - '.github/workflows/firebird-integration.yml'
+
+jobs:
+  firebird5-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Create disposable Firebird 5 instance
+        shell: bash
+        run: |
+          docker run -d --name firebird-integration --rm \
+            -p 127.0.0.1:3050:3050 \
+            -e FIREBIRD_ROOT_PASSWORD=IntegrationOnly_DoNotReuse_2026 \
+            -e FIREBIRD_DATABASE=integration.fdb \
+            -v "$PWD/tests/integration/init:/docker-entrypoint-initdb.d:ro" \
+            firebirdsql/firebird:5.0.4-bookworm
+      - name: Wait for database initialization
+        shell: bash
+        run: |
+          for attempt in $(seq 1 60); do
+            if docker exec firebird-integration test -f /var/lib/firebird/data/integration.fdb 2>/dev/null; then
+              sleep 3
+              exit 0
+            fi
+            if ! docker inspect -f '{{.State.Running}}' firebird-integration | grep -q true; then
+              docker logs firebird-integration
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs firebird-integration
+          exit 1
+      - name: Execute real database integration assertions
+        env:
+          FB_TEST_HOST: localhost
+          FB_TEST_PORT: '3050'
+          FB_TEST_DATABASE: integration.fdb
+          FB_TEST_PASSWORD: IntegrationOnly_DoNotReuse_2026
+        run: dotnet run --project tests/FirebirdMigration.IntegrationTests/FirebirdMigration.IntegrationTests.csproj --configuration Release
+      - name: Capture server logs on failure
+        if: failure()
+        run: docker logs --tail 100 firebird-integration
+      - name: Remove disposable instance
+        if: always()
+        run: docker rm -f firebird-integration || true
