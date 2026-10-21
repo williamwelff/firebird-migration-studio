@@ -136,7 +136,11 @@ AssertThrows(() => KeysetQueryBuilder.Build("CLIENTES; DROP TABLE X", new[] { "I
     "Rejeitar injeção de identificador");
 AssertThrows(() => KeysetQueryBuilder.Build("CLIENTES", new[] { "ID" }, 1001, false),
     "Rejeitar página excessiva");
-Console.WriteLine("54 verificações locais de perfis, versões, reset, metadados, registros e paginação concluídas.");
+Assert(KeysetQueryBuilder.Build("CLIENTES", new[] { "ID" }, 25, false)
+    .Contains("ORDER BY", StringComparison.Ordinal), "Primeira página sem cursor");
+Assert(!KeysetQueryBuilder.Build("CLIENTES", new[] { "ID" }, 25, false)
+    .Contains(" WHERE ", StringComparison.Ordinal), "Primeira página não filtra registros");
+Console.WriteLine("56 verificações locais de perfis, versões, reset, metadados, registros e paginação concluídas.");
 static void Assert(bool condition, string message)
 {
     if (!condition) throw new InvalidOperationException(message);
