@@ -47,7 +47,7 @@ jobs:
         env:
           FB_TEST_HOST: localhost
           FB_TEST_PORT: '3050'
-          FB_TEST_DATABASE: integration.fdb
+          FB_TEST_DATABASE: /var/lib/firebird/data/integration.fdb
           FB_TEST_PASSWORD: IntegrationOnly_DoNotReuse_2026
         run: dotnet run --project tests/FirebirdMigration.IntegrationTests/FirebirdMigration.IntegrationTests.csproj --configuration Release
       - name: Capture server logs on failure
