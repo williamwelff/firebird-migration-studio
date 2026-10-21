@@ -10,8 +10,12 @@ on:
       - '.github/workflows/firebird-integration.yml'
 
 jobs:
-  firebird5-integration:
+  firebird-integration:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['3.0.14-bookworm', '4.0.7-bookworm', '5.0.4-bookworm']
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +30,7 @@ jobs:
             -e FIREBIRD_ROOT_PASSWORD=IntegrationOnly_DoNotReuse_2026 \
             -e FIREBIRD_DATABASE=integration.fdb \
             -v "$PWD/tests/integration/init:/docker-entrypoint-initdb.d:ro" \
-            firebirdsql/firebird:5.0.4-bookworm
+            firebirdsql/firebird:${{ matrix.image }}
       - name: Wait for database initialization
         shell: bash
         run: |
