@@ -33,20 +33,20 @@ jobs:
       - name: Create source fixture via Firebird 2.5 isql
         run: |
           docker cp tests/integration/migration/fixture.sql fb25:/tmp/fixture.sql
-          docker exec fb25 sh -lc 'isql -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb -i /tmp/fixture.sql'
+          docker exec fb25 sh -lc '$(find / -type f -name isql 2>/dev/null | head -n 1) -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb -i /tmp/fixture.sql'
       - name: Backup with Firebird 2.5 gbak
         run: |
-          docker exec fb25 sh -lc 'gbak -b -g -v -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb /tmp/legacy.fbk'
+          docker exec fb25 sh -lc '$(find / -type f -name gbak 2>/dev/null | head -n 1) -b -g -v -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb /tmp/legacy.fbk'
           docker cp fb25:/tmp/legacy.fbk "${RUNNER_TEMP}/legacy.fbk"
           test -s "${RUNNER_TEMP}/legacy.fbk"
       - name: Restore with Firebird 5.0 gbak
         run: |
           docker cp "${RUNNER_TEMP}/legacy.fbk" fb50:/tmp/legacy.fbk
-          docker exec fb50 sh -lc 'gbak -c -v -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /tmp/legacy.fbk /var/lib/firebird/data/restored.fdb'
+          docker exec fb50 sh -lc '$(find / -type f -name gbak 2>/dev/null | head -n 1) -c -v -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /tmp/legacy.fbk /var/lib/firebird/data/restored.fdb'
       - name: Assert migrated schema and row contents using Firebird 5 isql
         run: |
           docker cp tests/integration/migration/verify.sql fb50:/tmp/verify.sql
-          docker exec fb50 sh -lc 'isql -b -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /var/lib/firebird/data/restored.fdb -i /tmp/verify.sql'
+          docker exec fb50 sh -lc '$(find / -type f -name isql 2>/dev/null | head -n 1) -b -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /var/lib/firebird/data/restored.fdb -i /tmp/verify.sql'
       - name: Show server logs if failed
         if: failure()
         run: |
