@@ -1,0 +1,55 @@
+name: Firebird 2.5 legacy integration (disposable)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/FirebirdMigration.Core/**'
+      - 'tests/FirebirdMigration.IntegrationTests/**'
+      - '.github/workflows/firebird-legacy-integration.yml'
+
+jobs:
+  firebird25:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Start disposable legacy Firebird container
+        run: |
+          docker run -d --rm --name firebird25-test \
+            -p 127.0.0.1:3055:3050 \
+            -e ISC_PASSWORD=legacy_ci_only_25 \
+            -e FIREBIRD_DATABASE=integration.fdb \
+            jacobalberty/firebird:v2.5.9-ss
+      - name: Wait for legacy Firebird database
+        run: |
+          for attempt in $(seq 1 45); do
+            if docker exec firebird25-test test -f /firebird/data/integration.fdb 2>/dev/null; then
+              sleep 3
+              exit 0
+            fi
+            if ! docker inspect -f '{{.State.Running}}' firebird25-test | grep -q true; then
+              docker logs firebird25-test
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs firebird25-test
+          exit 1
+      - name: Run real 2.5 integration assertions
+        env:
+          FB_TEST_HOST: localhost
+          FB_TEST_PORT: '3055'
+          FB_TEST_DATABASE: /firebird/data/integration.fdb
+          FB_TEST_PASSWORD: legacy_ci_only_25
+          FB_TEST_BOOTSTRAP: '1'
+        run: dotnet run --project tests/FirebirdMigration.IntegrationTests/FirebirdMigration.IntegrationTests.csproj -c Release
+      - name: Inspect legacy container on failure
+        if: failure()
+        run: docker logs --tail 80 firebird25-test
+      - name: Remove legacy container
+        if: always()
+        run: docker rm -f firebird25-test || true
