@@ -1,3 +1,4 @@
+using FirebirdSql.Data.FirebirdClient;
 using FirebirdMigration.Core;
 
 var host = Environment.GetEnvironmentVariable("FB_TEST_HOST") ?? "localhost";
@@ -12,6 +13,34 @@ var profile = new ConnectionProfile("Integração descartável", host, port, dat
 var probe = await FirebirdConnectionProbe.TestAsync(profile, password);
 Check(probe.Success, "Conexão real Firebird falhou. Confira os logs do serviço, sem divulgar credenciais.");
 
+if (Environment.GetEnvironmentVariable("FB_TEST_BOOTSTRAP") == "1")
+{
+    var builder = new FbConnectionStringBuilder {
+        DataSource = host, Port = port, Database = database,
+        UserID = "SYSDBA", Password = password, Pooling = false
+    };
+    await using var connection = new FbConnection(builder.ToString());
+    await connection.OpenAsync();
+    foreach (var statement in new[]
+    {
+        "CREATE TABLE CLIENTES (ID INTEGER NOT NULL PRIMARY KEY, NOME VARCHAR(80) NOT NULL)",
+        "CREATE TABLE PEDIDOS (FILIAL INTEGER NOT NULL, ID INTEGER NOT NULL, DESCRICAO VARCHAR(80), CONSTRAINT PK_PEDIDOS PRIMARY KEY (FILIAL, ID))",
+        "CREATE TABLE DOCUMENTOS (ID INTEGER NOT NULL PRIMARY KEY, TEXTO VARCHAR(100) CHARACTER SET UTF8, CONTEUDO BLOB SUB_TYPE TEXT)",
+        "INSERT INTO CLIENTES (ID, NOME) VALUES (1, 'Ana')",
+        "INSERT INTO CLIENTES (ID, NOME) VALUES (2, 'Bruno')",
+        "INSERT INTO CLIENTES (ID, NOME) VALUES (3, 'Carla')",
+        "INSERT INTO PEDIDOS (FILIAL, ID, DESCRICAO) VALUES (1, 1, 'Pedido A')",
+        "INSERT INTO PEDIDOS (FILIAL, ID, DESCRICAO) VALUES (1, 2, 'Pedido B')",
+        "INSERT INTO PEDIDOS (FILIAL, ID, DESCRICAO) VALUES (2, 1, 'Pedido C')",
+        "INSERT INTO DOCUMENTOS (ID, TEXTO, CONTEUDO) VALUES (1, 'Texto UTF8', 'Conteudo de teste')",
+        "INSERT INTO DOCUMENTOS (ID, TEXTO, CONTEUDO) VALUES (2, 'Outro texto', NULL)"
+    })
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = statement;
+        await command.ExecuteNonQueryAsync();
+    }
+}
 var first = await RecordPageReader.ReadKeysetPageAsync(
     profile, password, "CLIENTES", new[] { "ID" }, null, 2);
 Check(first.Count == 2, "Primeira página deveria conter dois clientes.");
