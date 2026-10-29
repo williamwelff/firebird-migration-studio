@@ -1,0 +1,59 @@
+name: Homologacao Firebird 2.5 para 5.0 (descartavel)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/firebird-25-to-50-migration.yml'
+      - 'tests/integration/migration/**'
+
+jobs:
+  migrate-25-to-50:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create disposable servers
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create fb-migration-ci
+          docker run -d --rm --name fb25 --network fb-migration-ci \
+            -e ISC_PASSWORD=legacy_ci_only_25 \
+            -e FIREBIRD_DATABASE=integration.fdb \
+            jacobalberty/firebird:v2.5.9-ss
+          docker run -d --rm --name fb50 --network fb-migration-ci \
+            -e FIREBIRD_ROOT_PASSWORD=IntegrationOnly_DoNotReuse_2026 \
+            firebirdsql/firebird:5.0.4-bookworm
+          for i in $(seq 1 45); do
+            docker exec fb25 test -f /firebird/data/integration.fdb && break
+            sleep 2
+          done
+          docker exec fb25 test -f /firebird/data/integration.fdb
+      - name: Create source fixture via Firebird 2.5 isql
+        run: |
+          docker cp tests/integration/migration/fixture.sql fb25:/tmp/fixture.sql
+          docker exec fb25 sh -lc 'isql -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb -i /tmp/fixture.sql'
+      - name: Backup with Firebird 2.5 gbak
+        run: |
+          docker exec fb25 sh -lc 'gbak -b -g -v -user SYSDBA -password legacy_ci_only_25 /firebird/data/integration.fdb /tmp/legacy.fbk'
+          docker cp fb25:/tmp/legacy.fbk "${RUNNER_TEMP}/legacy.fbk"
+          test -s "${RUNNER_TEMP}/legacy.fbk"
+      - name: Restore with Firebird 5.0 gbak
+        run: |
+          docker cp "${RUNNER_TEMP}/legacy.fbk" fb50:/tmp/legacy.fbk
+          docker exec fb50 sh -lc 'gbak -c -v -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /tmp/legacy.fbk /var/lib/firebird/data/restored.fdb'
+      - name: Assert migrated schema and row contents using Firebird 5 isql
+        run: |
+          docker cp tests/integration/migration/verify.sql fb50:/tmp/verify.sql
+          docker exec fb50 sh -lc 'isql -b -user SYSDBA -password IntegrationOnly_DoNotReuse_2026 /var/lib/firebird/data/restored.fdb -i /tmp/verify.sql'
+      - name: Show server logs if failed
+        if: failure()
+        run: |
+          docker logs --tail 60 fb25 || true
+          docker logs --tail 60 fb50 || true
+      - name: Destroy disposable databases and servers
+        if: always()
+        run: |
+          docker rm -f fb25 fb50 || true
+          docker network rm fb-migration-ci || true
