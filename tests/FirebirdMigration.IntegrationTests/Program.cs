@@ -45,7 +45,17 @@ try
 catch (InvalidOperationException) { blocked = true; }
 Check(blocked, "Ordenação por coluna não PK deveria ser bloqueada.");
 
-Console.WriteLine("OK: conexão, cursor simples/composto, fim da paginação e bloqueio de chave inválida.");
+var documents = await RecordPageReader.ReadKeysetPageAsync(
+    profile, password, "DOCUMENTOS", new[] { "ID" }, null, 2);
+Check(documents.Count == 2, "Duas linhas com texto e BLOB.");
+Check(Convert.ToString(documents[0]["TEXTO"]) == "Texto UTF8", "Leitura textual incorreta.");
+Check(documents[0]["CONTEUDO"] is not null, "BLOB de teste não deveria ser nulo.");
+Check(documents[1]["CONTEUDO"] is null, "BLOB NULL precisa ser preservado.");
+var documentNext = await RecordPageReader.ReadKeysetPageAsync(
+    profile, password, "DOCUMENTOS", new[] { "ID" },
+    new object[] { documents[^1]["ID"]! }, 2);
+Check(documentNext.Count == 0, "Cursor deve terminar na tabela com BLOB.");
+Console.WriteLine("OK: conexão, cursor simples/composto, fim de página, chave inválida e BLOB/texto.");
 Console.WriteLine("Servidor: " + probe.ServerVersion);
 
 static void Check(bool condition, string message)
